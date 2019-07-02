@@ -1,30 +1,29 @@
 #!/usr/bin/env sh
 clear
-URL=https://mangadex.org/title/7139/one-punch-man
-SUBSCRIBERS="hoffelmann@gmail.com" # Separate multiple users with coma inside the quotation marks
+
+NOTIFY_TO="hoffelmann@gmail.com" # Separate multiple users with coma inside the quotation marks
+
+MANGA='OnePunchMan' # Name of the manga in the describtion tag of the rss feed
+RSS_ALL_URL='https://mangadex.org/rss/follows/cknpMfm3XeCgAdyaru2sT4EzqhxPFNVv'
+RSS_MANGA_DATA=$(curl -s "$RSS_ALL_URL" | grep -B 3 "$MANGA")
 
 # Get latest_notified Chapters
-latest_notified=$(tail -1 $0 | cut -c2-)
+LATEST_NOTIFIED=$(tail -1 $0 | cut -c2-)
 #echo $latest_notified
 
-# Store page in variable
-html=$(curl -s $URL)
+LATEST_ONLINE_TITLE=$(echo "$RSS_MANGA_DATA" | sed -n 1p | grep -Po "(?<=>).*?(?=<)")
+LATEST_ONLINE_URL=$(echo "$RSS_MANGA_DATA" | sed -n 2p | grep -Po "(?<=>).*?(?=<)")
 
-latest_online=$(echo "$html" | grep -EA 8 "href='/chapter/[0-9]+" | grep -B 8 "title='English'" | head -1 | grep -Po "(?<=href=').*?(?=')")  # Parse first english link to episode on page
-latest_online_title=$(echo "$html" | grep -EA 8 "href='/chapter/[0-9]+" | grep -B 8 "title='English'" | head -1 | grep -Po "(?<=>).*?(?=</a)") # Parse first english title of episode on page
-#echo $latest_online
+if [ "$LATEST_ONLINE_URL" != "$LATEST_NOTIFIED" ]; then
+	echo "New chapter online: One Punch Man $LATEST_ONLINE_TITLE"
 
-if [ "$latest_online" != "$latest_notified" ]; then
-	echo "New chapter online: One Punch Man $latest_online_title"
-	href=$(echo "$html" | grep -EA 8 "href='/chapter/[0-9]+.*$latest_online" | grep -B 8 "title='English'" | head -1 | grep -Po "(?<=href=').*?(?=')")
-
-	echo "#$latest_online" >> $0 # Append current episode to file
+	echo "#$LATEST_ONLINE_URL" >> $0 # Append current episode to file
 	#echo "$URL$href"   # Print URL of current episode to terminal
 	#firefox $URL$href  # open new episode in firefox
-	echo "Read it on: $URL$href" | mail -s "One Punch Man $latest_online_title was just released" $SUBSCRIBERS
+	echo "Read it on: $LATEST_ONLINE_URL" | mail -s "$LATEST_ONLINE_TITLE was just released" $NOTIFY_TO
 else
 	echo "No new chapter online"
 fi
 
 # Already Notified
-#/chapter/642878
+#https://mangadex.org/chapter/653856
